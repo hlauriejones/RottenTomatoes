@@ -1,0 +1,45 @@
+name: Scraping Rotten Tomatoes
+
+#denoting when to run
+on:
+  workflow_dispatch:
+  schedule:
+      #use crontab guru to denote the scheduel easily 
+      #this is 11 mins past the hour, to avoid detection
+    - cron: '11 */1 * * *'
+
+#allowing it to write to the github repo
+permissions:
+  contents: write 
+
+
+jobs:
+  build:
+      #what to run it on 
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10']
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install dependencies #installs the things from requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Scrape data
+        run: |
+          python scraper.py #run the scraper file
+      - name: commit #commite them to the repo
+        run: |
+          git config user.name "Scraping script"
+          git config user.email "bkeegan@gmail.com"
+          git pull
+          git add *
+          git commit -m "New data"
+          git push
